@@ -1,0 +1,38 @@
+{
+  "name": "billion-context-kit",
+  "version": "0.1.0",
+  "description": "Host-agnostic shared surface for billion-context adapters (panel rendering, range viability, topic fallback). Layer 3 of the acp-kernel → kit → adapter stack.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ranxianglei/billion-context-kit.git"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test tests/*.test.ts"
+  },
+  "dependencies": {
+    "acp-kernel": "0.0.23"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "bun-types": "^1.3.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
