@@ -1,7 +1,7 @@
 {
   "name": "billion-context-kit",
-  "version": "0.1.1",
-  "description": "Host-agnostic shared surface for billion-context adapters (panel rendering, range viability, topic fallback). Layer 3 of the acp-kernel \u2192 kit \u2192 adapter stack.",
+  "version": "0.2.0",
+  "description": "Host-agnostic shared surface for billion-context adapters (panel rendering, range viability, topic fallback). Layer 3 of the acp-kernel → kit → adapter stack.",
   "type": "module",
   "license": "MIT",
   "repository": {
