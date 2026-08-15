@@ -1,7 +1,7 @@
 {
   "name": "billion-context-kit",
-  "version": "0.1.0",
-  "description": "Host-agnostic shared surface for billion-context adapters (panel rendering, range viability, topic fallback). Layer 3 of the acp-kernel → kit → adapter stack.",
+  "version": "0.1.1",
+  "description": "Host-agnostic shared surface for billion-context adapters (panel rendering, range viability, topic fallback). Layer 3 of the acp-kernel \u2192 kit \u2192 adapter stack.",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -21,7 +21,8 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "bun test tests/*.test.ts"
+    "test": "bun test tests/*.test.ts",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "acp-kernel": "0.0.23"
