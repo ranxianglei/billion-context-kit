@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "test": "bun test tests/*.test.ts",
+    "test": "bun test ./tests/",
     "prepare": "npm run build"
   },
   "dependencies": {
