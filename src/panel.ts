@@ -22,6 +22,13 @@ export interface StatusPanelInput {
   nudge: NudgeDecision | undefined;
   /** Configured model context window, in tokens. */
   modelContextLimit: number;
+  /** chars/4 estimate of the FULL (unpruned) core-message projection — the
+   *  same estimation scale as the kernel breakdown. When provided, the
+   *  panel derives `Session-only` on that scale (unpruned − sent). Without
+   *  it the line is omitted: subtracting the host's provider-scale number
+   *  from an estimate-scale number invents a third, meaningless scale
+   *  (issue #18 "看板统计的和拆分的有差异"). */
+  unprunedTokens?: number;
   /** Token formatter override (defaults to formatCompactTokens). */
   fmtTokens?: (n: number) => string;
 }
@@ -32,17 +39,19 @@ function bar(value: number, total: number, width: number = 20): string {
   return "█".repeat(filled) + "░".repeat(width - filled);
 }
 
-/** Render the /acp status panel. Two different token accountings, honestly
- *  labeled:
- *  - Session accounting (host footer): the append-only session tree
+/** Render the /acp status panel. Three token numbers, each labeled with
+ *  its own scale, never mixed in arithmetic:
+ *  - Session accounting (host footer scale): the append-only session tree
  *    INCLUDING compressed originals. It never shrinks — adapter pruning is
  *    a per-request transform view the host cannot see.
- *  - Sent view: what actually reaches the LLM after compression (kernel's
- *    chars/4 classification over the pruned projection + measured system
- *    prompt). This is the number compression controls.
- *  Never subtract one from the other into a fake bucket — on a
- *  well-compressed session that reads as "Framework 390K / 430K total",
- *  which is just the compressed originals still sitting in the tree. */
+ *  - Sent view (chars/4 est.): what actually reaches the LLM after
+ *    compression (kernel's classification over the pruned projection +
+ *    measured system prompt). This is the number compression controls.
+ *  - Session-only (chars/4 est.): unpruned projection − sent view; the
+ *    compressed originals pruned from every request.
+ *  Subtracting the host number from an estimate produced numbers that
+ *  reconciled with neither scale ("Framework 390K", "session-only 29k vs
+ *  112k compressed") — that is what issue #18 reported. */
 export function buildStatusPanel(input: StatusPanelInput): string {
   const { tokenCount, state, nudge, modelContextLimit } = input;
   const fmt = input.fmtTokens ?? formatCompactTokens;
@@ -51,9 +60,13 @@ export function buildStatusPanel(input: StatusPanelInput): string {
   const classified = bd ? bd.system + bd.tool + bd.summaries + bd.code + bd.text : 0;
   const systemPromptTokens = input.systemPromptTokens;
   const sentTotal = classified + systemPromptTokens;
-  const sessionOnly = Math.max(0, tokenCount - sentTotal);
+  // Same-scale derivation only: both sides are chars/4 estimates. The host
+  // footer's tokenCount (provider-anchored, session-tree) is displayed as
+  // its own line and never fed into an arithmetic difference with these.
+  const sessionOnly = input.unprunedTokens !== undefined ? Math.max(0, input.unprunedTokens - sentTotal) : 0;
   const displayTotal = tokenCount;
   const displayPct = limit > 0 ? Math.round((displayTotal / limit) * 100) : 0;
+  const sentPct = limit > 0 ? Math.round((sentTotal / limit) * 100) : 0;
   const activeBlocksList = state.blocks.filter((b) => b.active);
   const totalBlocksList = state.blocks;
 
@@ -64,7 +77,7 @@ export function buildStatusPanel(input: StatusPanelInput): string {
   lines.push("╰─────────────────────────────────────────────╯");
   if (input.version) lines.push(input.version);
   lines.push("");
-  lines.push(`Context (session accounting): ${displayPct}% (${fmt(displayTotal)} / ${fmt(limit)})`);
+  lines.push(`Context (session accounting, host footer scale): ${displayPct}% (${fmt(displayTotal)} / ${fmt(limit)}) — never shrinks; includes compressed originals`);
 
   if (nudge && bd) {
     const growth = bd.growth;
@@ -72,9 +85,9 @@ export function buildStatusPanel(input: StatusPanelInput): string {
       lines.push(`Growth: +${fmt(growth)} since last nudge`);
     }
     lines.push("");
-    lines.push(`Sent to LLM (after compression): ${fmt(sentTotal)}`);
-    if (sessionOnly > 0) {
-      lines.push(`Session-only (compressed originals + host overhead): ${fmt(sessionOnly)} — pruned from every request; the footer counts it`);
+    lines.push(`Sent to LLM (after compression, est.): ${fmt(sentTotal)}${limit > 0 ? ` (${sentPct}% of limit)` : ""}`);
+    if (input.unprunedTokens !== undefined && sessionOnly > 0) {
+      lines.push(`Session-only (compressed originals, est.): ${fmt(sessionOnly)} — pruned from every request; the footer/nudge still count them`);
     }
     lines.push("");
     lines.push("Token Breakdown (sent view):");
